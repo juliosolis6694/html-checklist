@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Checklist</title>
+</head>
+<body>
+
+  <!-- Dashboard Card -->
+  <div class="checklistbox">
+
+    <!-- Header -->
+    <div class="cl-header">
+      <h1 class="cl-title">Today's Tasks</h1>
+      <p class="cl-subtitle">Track your daily tasks</p>
+      <div class="cl-progress">
+        <div class="cl-progress-bar">
+          <div class="cl-progress-fill" id="progressFill"></div>
+        </div>
+        <span class="cl-progress-label" id="progressLabel">No tasks</span>
+      </div>
+    </div>
+
+    <!-- Task List -->
+    <ul class="cl-list" id="taskList"></ul>
+
+    <!-- Add Task Footer -->
+    <div class="cl-footer">
+      <div class="cl-add-row">
+        <input class="cl-input" type="text" id="newTaskInput" placeholder="Add a new task..." maxlength="60">
+        <button class="cl-add-btn" onclick="addTask()">+</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function updateProgress(changedCheckbox) {
+      const checkboxes = document.querySelectorAll('#taskList input[type="checkbox"]');
+      const total = checkboxes.length;
+      const done = [...checkboxes].filter(cb => cb.checked).length;
+      const pct = total === 0 ? 0 : (done / total) * 100;
+      const progressFill = document.getElementById('progressFill');
+      progressFill.style.width = pct + '%';
+      document.getElementById('progressLabel').textContent = total === 0 ? 'No tasks' : done + ' / ' + total + ' done';
+      checkboxes.forEach(cb => {
+        cb.closest('.cl-item').classList.toggle('cl-done', cb.checked);
+      });
+
+      if (changedCheckbox && changedCheckbox.checked) {
+        const item = changedCheckbox.closest('.cl-item');
+        item.classList.remove('cl-pop-done');
+        void item.offsetWidth;
+        item.classList.add('cl-pop-done');
+      }
+
+      const allDone = total > 0 && done === total;
+      progressFill.classList.toggle('cl-progress-celebrate', allDone);
+    }
+
+    function addTask() {
+      const input = document.getElementById('newTaskInput');
+      const name = input.value.trim();
+      if (!name) return;
+      const li = document.createElement('li');
+      li.className = 'cl-item';
+      li.innerHTML = `
+        <span class="cl-task-name">${escapeHtml(name)}</span>
+        <div class="cl-item-controls">
+          <label class="cl-toggle">
+            <input type="checkbox" onchange="updateProgress(this)">
+            <span class="cl-slider"></span>
+          </label>
+          <button class="cl-remove" onclick="removeTask(this)" aria-label="Remove task">&times;</button>
+        </div>`;
+      document.getElementById('taskList').appendChild(li);
+      input.value = '';
+      updateProgress();
+    }
+
+    function removeTask(btn) {
+      btn.closest('.cl-item').remove();
+      updateProgress();
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.getElementById('newTaskInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') addTask();
+    });
+  </script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* ── Full-Screen App Shell ── */
+.checklistbox {
+    background: #111827;
+    width: 100vw;
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-width: none;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ── Header ── */
+.cl-header {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    padding: 28px 24px 20px;
+    background: #0088ff;
+}
+
+.cl-header > * {
+    position: relative;
+    z-index: 1;
+}
+
+.cl-header::before,
+.cl-header::after {
+    content: '';
+    position: absolute;
+    inset: -40% -20%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.cl-header::before {
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 55%);
+    animation: headerDrift 10s linear infinite;
+}
+
+.cl-header::after {
+    background: radial-gradient(circle at 70% 65%, rgba(147, 197, 253, 0.35) 0%, rgba(147, 197, 253, 0) 60%);
+    animation: headerDrift 14s linear infinite reverse;
+}
+
+.cl-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 2px;
+}
+
+.cl-subtitle {
+    font-size: 12px;
+    color: rgba(255,255,255,0.65);
+    margin-bottom: 16px;
+}
+
+.cl-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cl-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.cl-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(135deg, #3ab12d 0%, #24eb0d 100%);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+}
+
+.cl-progress-celebrate {
+    animation: progressCelebrate 800ms ease-in-out infinite alternate;
+}
+
+.cl-progress-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.75);
+    white-space: nowrap;
+}
+
+/* ── Task List ── */
+.cl-list {
+    list-style: none;
+    flex: 1;
+    padding: 12px 0;
+}
+
+.cl-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid #1f2937;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.cl-item:last-child {
+    border-bottom: none;
+}
+
+.cl-item:hover {
+    background: #1f2937;
+}
+
+.cl-task-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #e5e7eb;
+    transition: color 0.3s;
+}
+
+.cl-done .cl-task-name {
+    color: #6b7280;
+    text-decoration: line-through;
+}
+
+.cl-done {
+    background: rgba(52, 211, 153, 0.08);
+}
+
+.cl-pop-done {
+    animation: taskDonePop 420ms ease;
+}
+
+/* ── Footer Settings Toggles ── */
+.cl-footer {
+    padding: 16px 24px 24px;
+    border-top: 1px solid #1f2937;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cl-footer-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cl-footer-label {
+    font-size: 13px;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+/* ── Toggle Slider ── */
+.cl-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.cl-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.cl-slider {
+    position: absolute;
+    inset: 0;
+    background: #374151;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.cl-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: #ffffff;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.cl-toggle input:checked + .cl-slider {
+    background: #3b82f6;
+}
+
+.cl-toggle input:checked + .cl-slider::before {
+    transform: translateX(20px);
+}
+
+/* — Item Controls (toggle + remove button) — */
+.cl-item-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.cl-remove {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 6px;
+    color: #ef4444;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.cl-remove:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+    transform: scale(1.1);
+}
+
+/* — Add Task Row — */
+.cl-add-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.cl-input {
+    flex: 1;
+    background: #1a2232;
+    border: 1px solid #2d3f55;
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: #e5e7eb;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.cl-input::placeholder {
+    color: #4b5563;
+}
+
+.cl-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.cl-add-btn {
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    border: none;
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 22px;
+    width: 42px;
+    height: 42px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.cl-add-btn:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+}
+
+@keyframes taskDonePop {
+    0% {
+        transform: scale(1);
+        background: rgba(52, 211, 153, 0.08);
+    }
+    45% {
+        transform: scale(1.02);
+        background: rgba(52, 211, 153, 0.2);
+    }
+    100% {
+        transform: scale(1);
+        background: rgba(52, 211, 153, 0.08);
+    }
+}
+
+@keyframes progressCelebrate {
+    0% {
+        filter: brightness(1);
+    }
+    100% {
+        filter: brightness(1.25);
+    }
+}
+
+@keyframes headerDrift {
+    0% {
+        transform: translate3d(-3%, -2%, 0) scale(1);
+    }
+    50% {
+        transform: translate3d(3%, 2%, 0) scale(1.06);
+    }
+    100% {
+        transform: translate3d(-3%, -2%, 0) scale(1);
+    }
+}
+
+
+</style>
+
+</body>
+</html>
